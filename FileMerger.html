@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Compare & Merge — DMS</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #07080f;
+  --s1:       #0c0e1a;
+  --s2:       #111422;
+  --s3:       #181c2e;
+  --s4:       #1f2440;
+  --border:   #252d4a;
+  --border2:  #2f3a60;
+  --blue:     #4d7cfe;
+  --blue-dim: rgba(77,124,254,.12);
+  --green:    #2dd98f;
+  --g-dim:    rgba(45,217,143,.1);
+  --red:      #ff5b6b;
+  --r-dim:    rgba(255,91,107,.1);
+  --yellow:   #ffc844;
+  --y-dim:    rgba(255,200,68,.1);
+  --purple:   #a78bfa;
+  --pu-dim:   rgba(167,139,250,.1);
+  --cyan:     #22d3ee;
+  --c-dim:    rgba(34,211,238,.1);
+  --orange:   #fb923c;
+  --o-dim:    rgba(251,146,60,.1);
+  --text:     #dde4f8;
+  --muted:    #6b7a9e;
+  --dim:      #333d5c;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+}
+
+/* ─── HEADER ─── */
+.header {
+  background: var(--s1);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 24px;
+  display: flex; align-items: center; gap: 14px;
+}
+.logo {
+  font-size: 18px; font-weight: 800; letter-spacing: -.5px;
+  background: linear-gradient(135deg, #4285f4, #34a853);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.logo-sub { font-size: 12px; color: var(--muted); font-weight: 400; }
+.header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.api-key-wrap { display: flex; align-items: center; gap: 7px; }
+.api-label { font-size: 11px; color: var(--muted); font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; }
+.api-input {
+  background: var(--s2); border: 1px solid var(--border);
+  border-radius: 6px; padding: 6px 12px;
+  color: var(--text); font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  width: 260px; outline: none; transition: border-color .2s;
+}
+.api-input:focus { border-color: var(--blue); }
+.api-status { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); transition: background .3s; }
+.api-status.ok { background: var(--green); }
+.api-status.err { background: var(--red); }
+
+/* ─── TABS ─── */
+.tabs {
+  background: var(--s1); border-bottom: 1px solid var(--border);
+  display: flex; padding: 0 24px;
+}
+.tab {
+  background: none; border: none; border-bottom: 2px solid transparent;
+  padding: 11px 18px; color: var(--muted);
+  font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all .15s; white-space: nowrap;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+/* ─── MAIN LAYOUT ─── */
+.workspace { padding: 20px 24px; display: flex; flex-direction: column; gap: 16px; }
+
+/* ─── UPLOAD PANELS ─── */
+.upload-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+.upload-panel {
+  background: var(--s2); border: 1px solid var(--border); border-radius: 12px;
+  overflow: hidden;
+}
+.up-header {
+  padding: 12px 16px; background: var(--s3); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.up-version-badge {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
+  padding: 3px 10px; border-radius: 20px; letter-spacing: 1px;
+}
+.va .up-version-badge { background: var(--blue-dim); color: var(--blue); border: 1px solid rgba(77,124,254,.3); }
+.vb .up-version-badge { background: var(--g-dim); color: var(--green); border: 1px solid rgba(45,217,143,.3); }
+.up-filename { font-size: 12px; color: var(--muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: 'JetBrains Mono', monospace; }
+.up-clear { background: none; border: none; color: var(--dim); cursor: pointer; font-size: 14px; padding: 2px 5px; transition: color .15s; }
+.up-clear:hover { color: var(--red); }
+
+.drop-zone {
+  min-height: 140px; display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 10px; padding: 24px;
+  cursor: pointer; border: 2px dashed transparent; transition: all .2s;
+}
+.drop-zone:hover, .drop-zone.over { border-color: var(--blue); background: var(--blue-dim); }
+.drop-icon { font-size: 32px; opacity: .5; }
+.drop-text { font-size: 13px; color: var(--muted); text-align: center; line-height: 1.6; }
+.drop-hint { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--dim); }
+
+.code-preview {
+  background: var(--bg); border-top: 1px solid var(--border);
+  max-height: 260px; overflow: auto; padding: 12px 14px;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.7;
+  color: var(--muted); white-space: pre-wrap; word-break: break-all;
+  display: none;
+}
+.code-preview::-webkit-scrollbar { width: 4px; }
+.code-preview::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.file-stats {
+  padding: 8px 16px; background: var(--s3); border-top: 1px solid var(--border);
+  display: none; gap: 12px;
+}
+.file-stat { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); }
+.file-stat b { color: var(--text); }
+
+/* ─── ACTION BAR ─── */
+.action-bar {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--s2); border: 1px solid var(--border); border-radius: 10px;
+  padding: 12px 16px;
+}
+.action-bar-label { font-size: 12px; color: var(--muted); }
+.merge-strategy {
+  background: var(--s3); border: 1px solid var(--border); border-radius: 6px;
+  padding: 6px 12px; color: var(--text); font-family: 'Outfit', sans-serif; font-size: 12px;
+  outline: none; cursor: pointer; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%236b7a9e' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px;
+}
+.merge-strategy option { background: var(--s2); }
+.custom-prompt-input {
+  flex: 1; background: var(--s3); border: 1px solid var(--border); border-radius: 6px;
+  padding: 6px 12px; color: var(--text); font-family: 'Outfit', sans-serif; font-size: 12px;
+  outline: none; transition: border-color .2s;
+}
+.custom-prompt-input:focus { border-color: var(--blue); }
+.custom-prompt-input::placeholder { color: var(--dim); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 18px; border-radius: 7px; border: none;
+  font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 600;
+  cursor: pointer; transition: all .18s; white-space: nowrap;
+}
+.btn-diff { background: var(--s3); border: 1px solid var(--border); color: var(--text); }
+.btn-diff:hover { border-color: var(--border2); background: var(--s4); }
+.btn-merge {
+  background: linear-gradient(135deg, #4285f4, #34a853);
+  color: #fff; box-shadow: 0 4px 18px rgba(66,133,244,.25);
+}
+.btn-merge:hover { box-shadow: 0 6px 24px rgba(66,133,244,.4); transform: translateY(-1px); }
+.btn-merge:disabled { opacity: .4; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-copy { background: var(--g-dim); border: 1px solid rgba(45,217,143,.3); color: var(--green); }
+.btn-copy:hover { background: rgba(45,217,143,.18); }
+.btn-download { background: var(--blue-dim); border: 1px solid rgba(77,124,254,.3); color: var(--blue); }
+.btn-download:hover { background: rgba(77,124,254,.2); }
+
+/* ─── DIFF VIEW ─── */
+.diff-container {
+  background: var(--s2); border: 1px solid var(--border); border-radius: 12px;
+  overflow: hidden; display: none;
+}
+.diff-header {
+  padding: 12px 18px; background: var(--s3); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+}
+.diff-title { font-size: 14px; font-weight: 700; }
+.diff-stats { display: flex; gap: 8px; margin-left: auto; }
+.diff-stat {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  padding: 2px 9px; border-radius: 4px;
+}
+.diff-stat.added   { background: var(--g-dim); color: var(--green); border: 1px solid rgba(45,217,143,.2); }
+.diff-stat.removed { background: var(--r-dim); color: var(--red);   border: 1px solid rgba(255,91,107,.2); }
+.diff-stat.changed { background: var(--y-dim); color: var(--yellow); border: 1px solid rgba(255,200,68,.2); }
+
+.diff-body { display: grid; grid-template-columns: 1fr 1fr; }
+.diff-side { overflow: auto; max-height: 420px; }
+.diff-side::-webkit-scrollbar { width: 4px; }
+.diff-side::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.diff-side-header {
+  position: sticky; top: 0; z-index: 5;
+  padding: 7px 14px; font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+.diff-side.va .diff-side-header { background: rgba(77,124,254,.08); color: var(--blue); }
+.diff-side.vb .diff-side-header { background: rgba(45,217,143,.07); color: var(--green); }
+.diff-side.va { border-right: 1px solid var(--border); }
+
+.diff-line {
+  display: flex; font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; line-height: 1.65; min-height: 22px;
+}
+.diff-line-num {
+  flex-shrink: 0; width: 42px; padding: 0 8px 0 6px;
+  text-align: right; color: var(--dim); font-size: 10px;
+  border-right: 1px solid var(--border); background: var(--s2);
+  user-select: none;
+}
+.diff-line-content { flex: 1; padding: 0 10px; white-space: pre-wrap; word-break: break-all; }
+.diff-line.added    { background: rgba(45,217,143,.08); }
+.diff-line.added .diff-line-num  { background: rgba(45,217,143,.1); color: var(--green); }
+.diff-line.removed  { background: rgba(255,91,107,.08); }
+.diff-line.removed .diff-line-num { background: rgba(255,91,107,.1); color: var(--red); }
+.diff-line.changed  { background: rgba(255,200,68,.06); }
+.diff-line.changed .diff-line-num { background: rgba(255,200,68,.1); color: var(--yellow); }
+
+/* ─── AI MERGE RESULT ─── */
+.merge-container {
+  background: var(--s2); border: 1px solid var(--border); border-radius: 12px;
+  overflow: hidden; display: none;
+}
+.merge-header {
+  padding: 12px 18px; background: var(--s3); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+}
+.merge-title { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.ai-badge {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700;
+  padding: 2px 8px; border-radius: 4px; letter-spacing: 1px;
+  background: linear-gradient(135deg, rgba(66,133,244,.15), rgba(52,168,83,.15));
+  color: #4285f4; border: 1px solid rgba(66,133,244,.3);
+}
+.merge-actions { margin-left: auto; display: flex; gap: 8px; }
+
+.merge-tabs { display: flex; border-bottom: 1px solid var(--border); }
+.merge-tab {
+  background: none; border: none; border-bottom: 2px solid transparent;
+  padding: 8px 16px; color: var(--muted); font-family: 'Outfit', sans-serif;
+  font-size: 12px; cursor: pointer; transition: all .15s;
+}
+.merge-tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+.merge-code-area {
+  max-height: 480px; overflow: auto; padding: 0;
+  font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.7;
+}
+.merge-code-area::-webkit-scrollbar { width: 4px; }
+.merge-code-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.merge-editor {
+  width: 100%; min-height: 480px; background: var(--bg);
+  border: none; outline: none; padding: 14px;
+  color: var(--text); font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; line-height: 1.7; resize: none;
+  display: none;
+}
+
+.ai-summary {
+  padding: 16px 20px; background: var(--bg); border-top: 1px solid var(--border);
+  display: none;
+}
+.ai-summary-title {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 2px;
+  text-transform: uppercase; color: var(--dim); margin-bottom: 10px;
+}
+.ai-summary-text { font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+/* ─── LOADING SPINNER ─── */
+.spinner-wrap {
+  display: none; align-items: center; justify-content: center;
+  flex-direction: column; gap: 16px; padding: 60px;
+  background: var(--s2); border: 1px solid var(--border); border-radius: 12px;
+}
+.spinner {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 3px solid var(--border);
+  border-top-color: #4285f4;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner-text { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--muted); }
+.spinner-sub { font-size: 11px; color: var(--dim); text-align: center; line-height: 1.6; }
+
+/* ─── CHANGE LIST ─── */
+.change-list { display: none; flex-direction: column; gap: 2px; }
+.change-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 8px 14px; border-bottom: 1px solid rgba(37,45,74,.5);
+  font-size: 12px; transition: background .1s; cursor: pointer;
+}
+.change-item:hover { background: var(--s3); }
+.change-tag {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700;
+  padding: 2px 7px; border-radius: 3px; flex-shrink: 0; margin-top: 1px;
+}
+.tag-added   { background: var(--g-dim); color: var(--green); }
+.tag-removed { background: var(--r-dim); color: var(--red); }
+.tag-changed { background: var(--y-dim); color: var(--yellow); }
+.tag-merged  { background: var(--blue-dim); color: var(--blue); }
+.change-desc { flex: 1; color: var(--text); line-height: 1.5; }
+.change-detail { font-size: 11px; color: var(--muted); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+
+/* ─── INLINE DIFF HIGHLIGHT ─── */
+.hl-add { background: rgba(45,217,143,.25); color: var(--green); border-radius: 2px; padding: 0 1px; }
+.hl-rem { background: rgba(255,91,107,.2); color: var(--red); text-decoration: line-through; border-radius: 2px; padding: 0 1px; }
+
+/* ─── TOAST ─── */
+.toast {
+  position: fixed; bottom: 22px; right: 22px; z-index: 999;
+  background: var(--s2); border: 1px solid var(--border); border-radius: 8px;
+  padding: 10px 18px; font-size: 12px; font-family: 'JetBrains Mono', monospace;
+  opacity: 0; transition: opacity .25s; pointer-events: none;
+}
+.toast.show { opacity: 1; }
+
+/* Gemini branding pill */
+.gemini-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700;
+  padding: 3px 10px; border-radius: 20px; letter-spacing: 1px;
+  background: linear-gradient(135deg, rgba(66,133,244,.15), rgba(52,168,83,.15), rgba(251,188,4,.1), rgba(234,67,53,.1));
+  border: 1px solid rgba(66,133,244,.25); color: #4285f4;
+}
+
+/* Syntax highlighting */
+.kw  { color: #7dd3fc; }
+.at  { color: #86efac; }
+.av  { color: #fca5a5; }
+.cm  { color: #475569; }
+.tx  { color: #cbd5e1; }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- HEADER -->
+<div class="header">
+  <div>
+    <div class="logo">AI Compare &amp; Merge</div>
+    <div class="logo-sub">Powered by Google Gemini · HTML · XML · Page Configurations</div>
+  </div>
+  <div class="header-right">
+    <span class="gemini-pill">✦ GEMINI</span>
+    <div class="api-key-wrap">
+      <span class="api-label">GEMINI KEY</span>
+      <input type="password" class="api-input" id="api-key" placeholder="AIzaSy…" oninput="onApiKeyInput()">
+      <div class="api-status" id="api-status"></div>
+    </div>
+    <div class="api-key-wrap">
+      <span class="api-label">MODEL</span>
+      <select id="gemini-model" style="background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:6px 10px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:10px;outline:none;cursor:pointer;min-width:200px;">
+        <option value="" disabled selected>— enter key to load models —</option>
+      </select>
+    </div>
+    <button onclick="fetchModels()" id="btn-load-models" style="background:var(--s3);border:1px solid var(--border);border-radius:6px;padding:6px 14px;color:var(--text);font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;cursor:pointer;">⟳ Load Models</button>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('compare',this)">⇄ Compare &amp; Merge</button>
+  <button class="tab" onclick="switchTab('history',this)">📋 Change Log</button>
+</div>
+
+<!-- WORKSPACE -->
+<div class="workspace" id="ws-compare">
+
+  <!-- UPLOAD ROW -->
+  <div class="upload-row">
+    <!-- VERSION A -->
+    <div class="upload-panel va" id="panel-a">
+      <div class="up-header">
+        <span class="up-version-badge">VERSION A</span>
+        <span class="up-filename" id="fname-a">No file loaded</span>
+        <button class="up-clear" onclick="clearFile('a')" title="Clear">✕</button>
+      </div>
+      <div class="drop-zone" id="drop-a"
+           onclick="document.getElementById('input-a').click()"
+           ondragover="onDragOver(event,'drop-a')"
+           ondragleave="onDragLeave('drop-a')"
+           ondrop="onDrop(event,'a')">
+        <div class="drop-icon">📄</div>
+        <div class="drop-text">Drop <b>Version A</b> here<br>or click to browse</div>
+        <div class="drop-hint">.html · .xml · .htm</div>
+      </div>
+      <input type="file" id="input-a" accept=".html,.htm,.xml" style="display:none" onchange="loadFile(this,'a')">
+      <pre class="code-preview" id="preview-a"></pre>
+      <div class="file-stats" id="stats-a">
+        <span class="file-stat">Lines: <b id="lines-a">—</b></span>
+        <span class="file-stat">Size: <b id="size-a">—</b></span>
+        <span class="file-stat">Fields: <b id="fields-a">—</b></span>
+      </div>
+    </div>
+
+    <!-- VERSION B -->
+    <div class="upload-panel vb" id="panel-b">
+      <div class="up-header">
+        <span class="up-version-badge">VERSION B</span>
+        <span class="up-filename" id="fname-b">No file loaded</span>
+        <button class="up-clear" onclick="clearFile('b')" title="Clear">✕</button>
+      </div>
+      <div class="drop-zone" id="drop-b"
+           onclick="document.getElementById('input-b').click()"
+           ondragover="onDragOver(event,'drop-b')"
+           ondragleave="onDragLeave('drop-b')"
+           ondrop="onDrop(event,'b')">
+        <div class="drop-icon">📄</div>
+        <div class="drop-text">Drop <b>Version B</b> here<br>or click to browse</div>
+        <div class="drop-hint">.html · .xml · .htm</div>
+      </div>
+      <input type="file" id="input-b" accept=".html,.htm,.xml" style="display:none" onchange="loadFile(this,'b')">
+      <pre class="code-preview" id="preview-b"></pre>
+      <div class="file-stats" id="stats-b">
+        <span class="file-stat">Lines: <b id="lines-b">—</b></span>
+        <span class="file-stat">Size: <b id="size-b">—</b></span>
+        <span class="file-stat">Fields: <b id="fields-b">—</b></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTION BAR -->
+  <div class="action-bar">
+    <span class="action-bar-label">Strategy:</span>
+    <select class="merge-strategy" id="strategy">
+      <option value="smart">Smart Merge — AI picks best from both</option>
+      <option value="prefer-b">Prefer Version B — keep B, add missing from A</option>
+      <option value="prefer-a">Prefer Version A — keep A, add new from B</option>
+      <option value="additive">Additive — combine everything, no deletions</option>
+      <option value="custom">Custom instructions…</option>
+    </select>
+    <input type="text" class="custom-prompt-input" id="custom-prompt"
+           placeholder="Describe what you want…  e.g. Keep B's field order but preserve A's security IDs"
+           style="display:none">
+    <button class="btn btn-diff" onclick="runDiff()" id="btn-diff">⇄ View Diff</button>
+    <button class="btn btn-merge" onclick="runMerge()" id="btn-merge" disabled>✦ AI Merge</button>
+  </div>
+
+  <!-- DIFF VIEW -->
+  <div class="diff-container" id="diff-container">
+    <div class="diff-header">
+      <div class="diff-title">⇄ Line-by-Line Diff</div>
+      <div class="diff-stats">
+        <span class="diff-stat added" id="ds-added">+0</span>
+        <span class="diff-stat removed" id="ds-removed">-0</span>
+        <span class="diff-stat changed" id="ds-changed">~0</span>
+      </div>
+    </div>
+    <div class="diff-body">
+      <div class="diff-side va">
+        <div class="diff-side-header">Version A</div>
+        <div id="diff-a"></div>
+      </div>
+      <div class="diff-side vb">
+        <div class="diff-side-header">Version B</div>
+        <div id="diff-b"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI SPINNER -->
+  <div class="spinner-wrap" id="spinner">
+    <div class="spinner"></div>
+    <div class="spinner-text" id="spinner-text">Sending to Gemini…</div>
+    <div class="spinner-sub" id="spinner-sub">Analyzing differences and generating merged output</div>
+  </div>
+
+  <!-- MERGE RESULT -->
+  <div class="merge-container" id="merge-container">
+    <div class="merge-header">
+      <div class="merge-title">
+        ✦ Merged Result
+        <span class="ai-badge">GEMINI GENERATED</span>
+      </div>
+      <div class="merge-actions">
+        <button class="btn btn-copy" onclick="copyMerged()">⎘ Copy</button>
+        <button class="btn btn-download" onclick="downloadMerged()">⬇ Download</button>
+      </div>
+    </div>
+    <div class="merge-tabs">
+      <button class="merge-tab active" onclick="switchMergeTab('result',this)">Merged File</button>
+      <button class="merge-tab" onclick="switchMergeTab('summary',this)">AI Summary</button>
+      <button class="merge-tab" onclick="switchMergeTab('edit',this)">✎ Edit</button>
+      <button class="merge-tab" onclick="switchMergeTab('changes',this)">Change Log</button>
+    </div>
+
+    <!-- Merged code view -->
+    <div class="merge-code-area" id="merge-result-view">
+      <div id="merge-highlighted" style="padding:14px;white-space:pre-wrap;word-break:break-all;font-size:11px;line-height:1.7"></div>
+    </div>
+
+    <!-- AI Summary tab -->
+    <div class="ai-summary" id="ai-summary-panel">
+      <div class="ai-summary-title">Gemini's Merge Summary</div>
+      <div class="ai-summary-text" id="ai-summary-text"></div>
+    </div>
+
+    <!-- Edit tab -->
+    <textarea class="merge-editor" id="merge-editor" spellcheck="false"
+      oninput="document.getElementById('merge-highlighted').textContent=this.value"></textarea>
+
+    <!-- Change log tab -->
+    <div class="change-list" id="change-list"></div>
+  </div>
+
+</div>
+
+<!-- HISTORY TAB -->
+<div class="workspace" id="ws-history" style="display:none">
+  <div style="background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:20px">
+    <div style="font-size:13px;font-weight:600;margin-bottom:14px">Merge History</div>
+    <div id="history-list" style="color:var(--muted);font-size:13px">No merges performed yet.</div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════
+const FILES = { a: null, b: null };
+let MERGE_RESULT = '';
+let MERGE_HISTORY = [];
+
+// ══════════════════════════════════════════════════════════
+// FILE LOADING
+// ══════════════════════════════════════════════════════════
+function loadFile(input, side) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => setFile(side, file.name, e.target.result);
+  reader.readAsText(file);
+}
+
+function onDrop(e, side) {
+  e.preventDefault();
+  onDragLeave('drop-' + side);
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => setFile(side, file.name, ev.target.result);
+  reader.readAsText(file);
+}
+function onDragOver(e, id) { e.preventDefault(); document.getElementById(id).classList.add('over'); }
+function onDragLeave(id)   { document.getElementById(id).classList.remove('over'); }
+
+function setFile(side, name, content) {
+  const lines = content.split('\n');
+  FILES[side] = { name, content, lines };
+
+  document.getElementById('fname-' + side).textContent = name;
+  const drop = document.getElementById('drop-' + side);
+  drop.style.display = 'none';
+
+  const preview = document.getElementById('preview-' + side);
+  preview.style.display = 'block';
+  preview.textContent = content.slice(0, 3000) + (content.length > 3000 ? '\n… (truncated for preview)' : '');
+
+  const stats = document.getElementById('stats-' + side);
+  stats.style.display = 'flex';
+  document.getElementById('lines-' + side).textContent = lines.length.toLocaleString();
+  document.getElementById('size-' + side).textContent = formatBytes(content.length);
+  const fieldCount = (content.match(/<input|<select|<textarea/gi) || []).length;
+  document.getElementById('fields-' + side).textContent = fieldCount;
+
+  checkReady();
+  if (FILES.a && FILES.b) setTimeout(runDiff, 100);
+}
+
+function clearFile(side) {
+  FILES[side] = null;
+  document.getElementById('fname-' + side).textContent = 'No file loaded';
+  document.getElementById('drop-' + side).style.display = 'flex';
+  document.getElementById('preview-' + side).style.display = 'none';
+  document.getElementById('stats-' + side).style.display = 'none';
+  document.getElementById('input-' + side).value = '';
+  checkReady();
+}
+
+function checkReady() {
+  const ready = FILES.a && FILES.b;
+  document.getElementById('btn-merge').disabled = !(ready && getApiKey());
+  if (!ready) {
+    document.getElementById('diff-container').style.display = 'none';
+    document.getElementById('merge-container').style.display = 'none';
+  }
+}
+
+function formatBytes(n) {
+  if (n < 1024) return n + ' B';
+  if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
+  return (n / 1048576).toFixed(1) + ' MB';
+}
+
+// ══════════════════════════════════════════════════════════
+// STRATEGY
+// ══════════════════════════════════════════════════════════
+document.getElementById('strategy').addEventListener('change', function () {
+  document.getElementById('custom-prompt').style.display = this.value === 'custom' ? 'flex' : 'none';
+});
+
+// ══════════════════════════════════════════════════════════
+// DIFF ENGINE (LCS-based line diff)
+// ══════════════════════════════════════════════════════════
+function computeDiff(linesA, linesB) {
+  const m = linesA.length, n = linesB.length;
+  const la = linesA, lb = linesB;
+
+  // For very large files use a capped LCS to keep UI responsive,
+  // but the full content is always sent to the AI untruncated.
+  const LCS_CAP = 2000;
+  const lcsM = Math.min(m, LCS_CAP), lcsN = Math.min(n, LCS_CAP);
+  const lcsA = la.slice(0, lcsM), lcsB = lb.slice(0, lcsN);
+  const dp = Array.from({ length: lcsM + 1 }, () => new Int32Array(lcsN + 1));
+  for (let i = lcsM - 1; i >= 0; i--)
+    for (let j = lcsN - 1; j >= 0; j--)
+      dp[i][j] = lcsA[i] === lcsB[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+
+  const result = []; let i = 0, j = 0;
+  while (i < lcsM || j < lcsN) {
+    if (i < lcsM && j < lcsN && lcsA[i] === lcsB[j])                              { result.push({ type: 'same',    a: lcsA[i], b: lcsB[j], ia: i, ib: j }); i++; j++; }
+    else if (j < lcsN && (i >= lcsM || dp[i][j + 1] >= dp[i + 1][j]))            { result.push({ type: 'added',   b: lcsB[j], ib: j }); j++; }
+    else                                                                            { result.push({ type: 'removed', a: lcsA[i], ia: i }); i++; }
+  }
+  // Append remaining lines beyond LCS cap as plain 'same' for display
+  for (let x = lcsM; x < m; x++) result.push({ type: 'same', a: la[x], b: la[x], ia: x, ib: x });
+
+  const paired = []; let k = 0;
+  while (k < result.length) {
+    const cur = result[k];
+    if (cur.type === 'removed' && k + 1 < result.length && result[k + 1].type === 'added') {
+      paired.push({ type: 'changed', a: cur.a, b: result[k + 1].b, ia: cur.ia, ib: result[k + 1].ib });
+      k += 2;
+    } else {
+      paired.push(cur); k++;
+    }
+  }
+  return paired;
+}
+
+function runDiff() {
+  if (!FILES.a || !FILES.b) { toast('Load both files first'); return; }
+
+  const diff = computeDiff(FILES.a.lines, FILES.b.lines);
+  let addedCount = 0, removedCount = 0, changedCount = 0;
+  let htmlA = '', htmlB = '';
+
+  diff.forEach((d, idx) => {
+    if (d.type === 'same') {
+      htmlA += diffLine('same', (d.ia ?? idx) + 1, d.a);
+      htmlB += diffLine('same', (d.ib ?? idx) + 1, d.b);
+    } else if (d.type === 'added') {
+      addedCount++;
+      htmlA += diffLine('empty', '', '');
+      htmlB += diffLine('added', d.ib + 1, d.b);
+    } else if (d.type === 'removed') {
+      removedCount++;
+      htmlA += diffLine('removed', d.ia + 1, d.a);
+      htmlB += diffLine('empty', '', '');
+    } else if (d.type === 'changed') {
+      changedCount++;
+      htmlA += diffLine('changed', d.ia + 1, d.a);
+      htmlB += diffLine('changed', d.ib + 1, d.b);
+    }
+  });
+
+  document.getElementById('diff-a').innerHTML = htmlA;
+  document.getElementById('diff-b').innerHTML = htmlB;
+  document.getElementById('ds-added').textContent   = `+${addedCount}`;
+  document.getElementById('ds-removed').textContent = `-${removedCount}`;
+  document.getElementById('ds-changed').textContent = `~${changedCount}`;
+  document.getElementById('diff-container').style.display = 'block';
+  checkReady();
+}
+
+function diffLine(type, num, content) {
+  const cls = type === 'empty' ? '' : ` ${type}`;
+  const numHtml = type === 'empty'
+    ? '<span class="diff-line-num"></span>'
+    : `<span class="diff-line-num">${num}</span>`;
+  const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return `<div class="diff-line${cls}">${numHtml}<span class="diff-line-content">${esc(content)}</span></div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// API KEY — Gemini keys start with "AIza"
+// ══════════════════════════════════════════════════════════
+function getApiKey() { return document.getElementById('api-key').value.trim(); }
+
+function checkApiKey() {
+  const key = getApiKey();
+  const status = document.getElementById('api-status');
+  status.className = 'api-status ' + (key.startsWith('AIza') ? 'ok' : key ? 'err' : '');
+  checkReady();
+}
+
+// ══════════════════════════════════════════════════════════
+// MERGE PROMPT BUILDER
+// ══════════════════════════════════════════════════════════
+function buildMergePrompt() {
+  const strategy = document.getElementById('strategy').value;
+  const customInstr = document.getElementById('custom-prompt').value.trim();
+
+  const strategyText = {
+    'smart':    'Use smart merging: analyze both versions and choose the best content from each. Prefer Version B for newer changes, but keep valuable content from Version A that was removed.',
+    'prefer-b': 'Prefer Version B as the base. Keep all of Version B intact, but add any fields or configurations from Version A that are missing in Version B.',
+    'prefer-a': 'Prefer Version A as the base. Keep all of Version A intact, but add any new fields or configurations from Version B that are not in Version A.',
+    'additive': 'Additive merge: combine EVERYTHING from both versions. Do not remove anything. If there are conflicts, include both with a comment.',
+    'custom':   customInstr || 'Smart merge both versions.',
+  }[strategy];
+
+  return `You are an expert HTML/XML merge tool. You will merge two versions of an HTML/XML configuration file.
+
+## Merge Strategy
+${strategyText}
+
+## Rules
+1. Output ONLY the final merged file content — no explanation, no markdown code fences, no preamble.
+2. Preserve all HTML/XML structure, indentation style, and attribute ordering from the primary version.
+3. For HTML files: preserve all id, name, fullid, security attributes exactly — never alter field identifiers.
+4. For conflicts: when content differs meaningfully, add an XML comment: <!-- MERGED: chose B over A: reason -->
+5. Maintain the file type (HTML stays HTML, XML stays XML).
+6. After the merged content, append a special section as an XML comment block:
+   <!-- AI_MERGE_SUMMARY
+   Changes made:
+   - [list each significant merge decision]
+   - [note any conflicts resolved]
+   - [note fields added/removed]
+   Total changes: X
+   AI_MERGE_SUMMARY_END -->
+
+## Version A (${FILES.a.name})
+\`\`\`
+${FILES.a.content}
+\`\`\`
+
+## Version B (${FILES.b.name})
+\`\`\`
+${FILES.b.content}
+\`\`\`
+
+Output the merged file now:`;
+}
+
+// ══════════════════════════════════════════════════════════
+// AI MERGE — Google Gemini API
+// ══════════════════════════════════════════════════════════
+async function runMerge() {
+  const apiKey = getApiKey();
+  if (!apiKey) { toast('Enter your Gemini API key first', true); return; }
+  if (!FILES.a || !FILES.b) { toast('Load both files first', true); return; }
+
+  document.getElementById('spinner').style.display = 'flex';
+  document.getElementById('merge-container').style.display = 'none';
+  setSpinner('Sending files to Gemini…', 'Analyzing structural differences between the two versions');
+
+  try {
+    if (document.getElementById('diff-container').style.display !== 'block') runDiff();
+
+    setSpinner('AI merging in progress…', 'Gemini is analyzing both versions and applying merge strategy');
+
+    // ── Gemini endpoint ──────────────────────────────────────
+    const GEMINI_MODEL = document.getElementById('gemini-model').value;
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: buildMergePrompt() }]
+          }
+        ],
+        generationConfig: {
+          maxOutputTokens: 65536,
+          temperature: 0.2,   // Low temp → deterministic merges
+          topP: 0.95,
+        }
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error?.message || `HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // ── Extract text from Gemini response shape ──────────────
+    // Shape: data.candidates[0].content.parts[0].text
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+    if (!raw) {
+      const finishReason = data.candidates?.[0]?.finishReason || 'unknown';
+      throw new Error(`Gemini returned empty output. Finish reason: ${finishReason}`);
+    }
+
+    // Strip markdown code fences Gemini sometimes wraps output in
+    let cleaned = raw.replace(/^```[\w]*\n?/, '').replace(/\n?```$/, '').trim();
+
+    // ── Extract AI summary block ─────────────────────────────
+    let merged = cleaned;
+    let summaryText = '';
+    const sumMatch = cleaned.match(/<!--\s*AI_MERGE_SUMMARY([\s\S]*?)AI_MERGE_SUMMARY_END\s*-->/);
+    if (sumMatch) {
+      summaryText = sumMatch[1].trim();
+      merged = cleaned.replace(/<!--\s*AI_MERGE_SUMMARY[\s\S]*?AI_MERGE_SUMMARY_END\s*-->/g, '').trim();
+    }
+
+    MERGE_RESULT = merged;
+    document.getElementById('merge-editor').value = merged;
+    renderMergeHighlighted(merged);
+
+    document.getElementById('ai-summary-text').innerHTML = summaryText
+      ? formatSummary(summaryText)
+      : 'Merge completed. Switch to <b>Edit</b> tab to modify the result manually.';
+
+    buildChangeLog(merged, summaryText);
+
+    MERGE_HISTORY.unshift({
+      ts: new Date().toLocaleString(),
+      fileA: FILES.a.name,
+      fileB: FILES.b.name,
+      strategy: document.getElementById('strategy').value,
+      result: merged,
+    });
+    renderHistory();
+
+    document.getElementById('spinner').style.display = 'none';
+    document.getElementById('merge-container').style.display = 'block';
+    document.getElementById('merge-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    toast('✓ Merge complete');
+
+  } catch (e) {
+    document.getElementById('spinner').style.display = 'none';
+    toast('Error: ' + e.message, true);
+    console.error(e);
+  }
+}
+
+function setSpinner(text, sub) {
+  document.getElementById('spinner-text').textContent = text;
+  document.getElementById('spinner-sub').textContent = sub;
+}
+
+// ══════════════════════════════════════════════════════════
+// RENDER MERGE OUTPUT
+// ══════════════════════════════════════════════════════════
+function renderMergeHighlighted(code) {
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  let h = esc(code);
+  h = h.replace(/(&lt;!--[\s\S]*?--&gt;)/g, '<span class="cm">$1</span>');
+  h = h.replace(/(&lt;\/?)([\w:-]+)/g, '$1<span class="kw">$2</span>');
+  h = h.replace(/\s([\w:-]+)(=)(&quot;[^&]*&quot;)/g, ' <span class="at">$1</span>$2<span class="av">$3</span>');
+  h = h.replace(/(MERGED:)/g, '<span style="color:var(--yellow);font-weight:700">$1</span>');
+  document.getElementById('merge-highlighted').innerHTML = h;
+}
+
+function formatSummary(text) {
+  return text
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => l)
+    .map(l => {
+      const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      return l.startsWith('-')
+        ? `<div style="display:flex;gap:8px;margin-bottom:6px"><span style="color:#4285f4">→</span><span>${esc(l.slice(1).trim())}</span></div>`
+        : `<div style="margin-bottom:4px;color:var(--text)">${esc(l)}</div>`;
+    })
+    .join('');
+}
+
+function buildChangeLog(merged, summary) {
+  const list = document.getElementById('change-list');
+  const lines = summary.split('\n').filter(l => l.trim().startsWith('-'));
+  if (!lines.length) {
+    list.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:12px">No detailed change log available.</div>';
+    return;
+  }
+  list.innerHTML = lines.map(l => {
+    const raw  = l.slice(1).trim();
+    const text = raw.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    const isAdded   = /added|new field|inserted/i.test(raw);
+    const isRemoved = /removed|deleted/i.test(raw);
+    const isChanged = /changed|updated|modified|chose/i.test(raw);
+    const tag = isAdded ? 'added' : isRemoved ? 'removed' : isChanged ? 'changed' : 'merged';
+    const tagLabel = isAdded ? 'ADDED' : isRemoved ? 'REMOVED' : isChanged ? 'CHANGED' : 'MERGED';
+    return `<div class="change-item">
+      <span class="change-tag tag-${tag}">${tagLabel}</span>
+      <span class="change-desc">${text}</span>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// MERGE TABS
+// ══════════════════════════════════════════════════════════
+function switchMergeTab(tab, btn) {
+  document.querySelectorAll('.merge-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('merge-result-view').style.display  = tab === 'result'  ? 'block' : 'none';
+  document.getElementById('ai-summary-panel').style.display   = tab === 'summary' ? 'block' : 'none';
+  document.getElementById('merge-editor').style.display       = tab === 'edit'    ? 'block' : 'none';
+  document.getElementById('change-list').style.display        = tab === 'changes' ? 'flex'  : 'none';
+}
+
+// ══════════════════════════════════════════════════════════
+// COPY / DOWNLOAD
+// ══════════════════════════════════════════════════════════
+function copyMerged() {
+  const content = document.getElementById('merge-editor').value || MERGE_RESULT;
+  navigator.clipboard.writeText(content).then(() => toast('✓ Copied to clipboard'));
+}
+
+function downloadMerged() {
+  const content = document.getElementById('merge-editor').value || MERGE_RESULT;
+  const ext = (FILES.a?.name || 'merged.html').match(/\.\w+$/)?.[0] || '.html';
+  const nameA = (FILES.a?.name || 'a').replace(/\.\w+$/, '');
+  const nameB = (FILES.b?.name || 'b').replace(/\.\w+$/, '');
+  const filename = `merged_${nameA}_${nameB}${ext}`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: 'text/html' }));
+  a.download = filename;
+  a.click();
+  toast('⬇ Downloading ' + filename);
+}
+
+// ══════════════════════════════════════════════════════════
+// HISTORY
+// ══════════════════════════════════════════════════════════
+function renderHistory() {
+  const el = document.getElementById('history-list');
+  if (!MERGE_HISTORY.length) { el.textContent = 'No merges performed yet.'; return; }
+  el.innerHTML = MERGE_HISTORY.map((h, i) => `
+    <div style="background:var(--s3);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span style="font-size:12px;font-weight:700">Merge #${MERGE_HISTORY.length - i}</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted)">${h.ts}</span>
+        <span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:9px;background:var(--blue-dim);color:var(--blue);border:1px solid rgba(77,124,254,.3);padding:2px 8px;border-radius:4px">${h.strategy}</span>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
+        <b style="color:var(--blue)">A:</b> ${h.fileA} &nbsp;→&nbsp; <b style="color:var(--green)">B:</b> ${h.fileB}
+      </div>
+      <button onclick="restoreHistory(${i})" class="btn btn-diff" style="font-size:11px;padding:5px 12px">↩ Restore this result</button>
+    </div>`).join('');
+}
+
+function restoreHistory(i) {
+  MERGE_RESULT = MERGE_HISTORY[i].result;
+  document.getElementById('merge-editor').value = MERGE_RESULT;
+  renderMergeHighlighted(MERGE_RESULT);
+  document.getElementById('merge-container').style.display = 'block';
+  switchTab('compare', document.querySelector('[onclick="switchTab(\'compare\',this)"]'));
+  toast('↩ Restored merge #' + (MERGE_HISTORY.length - i));
+}
+
+// ══════════════════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════════════════
+function switchTab(tab, btn) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('ws-compare').style.display = tab === 'compare' ? 'flex' : 'none';
+  document.getElementById('ws-history').style.display = tab === 'history' ? 'flex' : 'none';
+  if (tab === 'history') renderHistory();
+}
+
+// ══════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════
+function toast(msg, isErr = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.borderColor = isErr ? 'var(--red)' : 'var(--border)';
+  t.style.color = isErr ? 'var(--red)' : 'var(--text)';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ══════════════════════════════════════════════════════════
+// API KEY INPUT HANDLER
+// ══════════════════════════════════════════════════════════
+let fetchModelsTimer = null;
+function onApiKeyInput() {
+  checkApiKey();
+  clearTimeout(fetchModelsTimer);
+  const key = getApiKey();
+  if (key.startsWith('AIza') && key.length > 20) {
+    fetchModelsTimer = setTimeout(fetchModels, 800); // auto-fetch after typing stops
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// FETCH REAL AVAILABLE MODELS FROM THE API KEY
+// ══════════════════════════════════════════════════════════
+async function fetchModels() {
+  const apiKey = getApiKey();
+  if (!apiKey) { toast('Enter your Gemini API key first', true); return; }
+
+  const sel = document.getElementById('gemini-model');
+  const btn = document.getElementById('btn-load-models');
+  sel.innerHTML = '<option value="" disabled selected>Loading…</option>';
+  btn.textContent = '⏳';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}&pageSize=100`
+    );
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.error?.message || 'HTTP ' + res.status);
+    }
+    const data = await res.json();
+
+    // Filter to only models that support generateContent
+    const models = (data.models || []).filter(m =>
+      m.supportedGenerationMethods?.includes('generateContent')
+    );
+
+    if (!models.length) throw new Error('No generateContent models found for this key');
+
+    // Prefer flash/pro text models, sort by name
+    const preferred = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.5-pro',
+                       'gemini-2.0-flash', 'gemini-2.0-flash-lite'];
+
+    models.sort((a, b) => {
+      const an = a.name.split('/')[1];
+      const bn = b.name.split('/')[1];
+      const ai = preferred.findIndex(p => an.startsWith(p));
+      const bi = preferred.findIndex(p => bn.startsWith(p));
+      if (ai !== -1 && bi !== -1) return ai - bi;
+      if (ai !== -1) return -1;
+      if (bi !== -1) return 1;
+      return an.localeCompare(bn);
+    });
+
+    sel.innerHTML = '';
+    models.forEach((m, i) => {
+      const name = m.name.split('/')[1];
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name + (i === 0 ? ' ★ recommended' : '');
+      if (i === 0) opt.selected = true;
+      sel.appendChild(opt);
+    });
+
+    document.getElementById('api-status').className = 'api-status ok';
+    toast(`✓ Loaded ${models.length} models — ${sel.value} selected`);
+    checkReady();
+
+  } catch(e) {
+    sel.innerHTML = '<option value="" disabled selected>— failed to load —</option>';
+    toast('✗ ' + e.message, true);
+    console.error(e);
+  } finally {
+    btn.textContent = '⟳ Load Models';
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
